@@ -12,73 +12,36 @@ typedef unsigned int uint; // simplify life. In arduino this *should* be
 #define SIZEMID 6
 #define SIZETYPE 3
 #define SIZESIZE 5
-#define SIZECHECKSUM 16
-#define SIZEHEAD (SIZESRC + SIZEMID + SIZETYPE + SIZESIZE + SIZECHECKSUM)
+#define SIZEHEAD (SIZESRC + SIZEMID + SIZETYPE + SIZESIZE)
 
 #define SIZEPID 8
-#define SIZEVAL 32
+#define SIZEVAL 16
 #define SIZEPACKET (SIZEPID + SIZEVAL)
 
-/* === MESSAGE STRUCTURE =======================================================
-+------------------------------------+-----------------------------------------+
-| HEADER                             | PAYLOAD                                 |
-|  (32 bits)                         |  (40*size bits)                         |
-+-----+-----+------+------+----------+--------+--------+--------+--------+-----+
-| src | mid | type | size | checksum | pid[0] | val[0] | pid[1] | val[1] | ... |
-| (2) | (6) | (3)  | (5)  | (16)     | (8)    | (32)   | (8)    | (32)   | ... |
-+-----+-----+------+------+----------+--------+--------+--------+--------+-----+
+/* === MESSAGE STRUCTURE ============================================
++-------------------------+-----------------------------------------+
+| HEADER                  | PAYLOAD                                 |
+|  (32 bits)              |  (24*size bits)                         |
++-----+-----+------+------+--------+--------+--------+--------+-----+
+| src | mid | type | size | pid[0] | val[0] | pid[1] | val[1] | ... |
+| (2) | (6) | (3)  | (5)  | (8)    | (16)   | (8)    | (16)   | ... |
++-----+-----+------+------+--------+--------+--------+--------+-----+
 */
 typedef struct head {
     uint src      : SIZESRC;
     uint mid      : SIZEMID;
     uint type     : SIZETYPE;
     uint size     : SIZESIZE;
-    uint checksum : SIZECHECKSUM;
 } head;
 typedef struct packet {
     uint pid : SIZEPID;
     uint     : 0;
-    //uint val : SIZEVAL;
-    uint32_t val : SIZEVAL;
+    uint val : SIZEVAL; // NOTE: If this fails, change type to uint16_t.
 } packet;
 typedef struct msg {
     head head;
     packet *payload;
 } msg;
-
-
-
-// === GENERAL UTILITIES =======================================================
-/*uint16_t calc_checksum(msg *m) {
-    // Modulo operations are technically not needed, but are added just in case
-    // the compiler gets angry with overflows. Remove if convenient.
-    uint16_t csum = m->head.src;
-    csum = (csum + m->head.mid)  % (1<<SIZECHECKSUM);
-    csum = (csum + m->head.type) % (1<<SIZECHECKSUM);
-    csum = (csum + m->head.size) % (1<<SIZECHECKSUM);
-    for (int i = 0; i < m->head.size; ++i) {
-        csum = (csum + m->payload[i].pid) % (1<<SIZECHECKSUM);
-        csum = (csum + m->payload[i].val) % (1<<SIZECHECKSUM);
-    }
-
-    return csum;
-}*/
-
-uint16_t calc_checksum(msg *m) {
-    // Modulo operations are technically not needed, but are added just in case
-    // the compiler gets angry with overflows. Remove if convenient.
-    uint32_t maxcsum = 1<<SIZECHECKSUM;
-    uint16_t csum = m->head.src;
-    csum = (csum + m->head.mid)  % (maxcsum);
-    csum = (csum + m->head.type) % (maxcsum);
-    csum = (csum + m->head.size) % (maxcsum);
-    for (int i = 0; i < m->head.size; ++i) {
-        csum = (csum + m->payload[i].pid) % (maxcsum);
-        csum = (csum + m->payload[i].val) % (maxcsum);
-    }
-
-    return csum;
-}
 
 // === WRITE MSG ===============================================================
 int fill_header(head *h, uint16_t src, uint16_t mid, uint16_t type,
@@ -110,12 +73,6 @@ int fill_payload(packet **pl, uint16_t *pids, uint32_t *vals, uint16_t size) {
     return 0;
 }
 
-int fill_checksum(msg *m) {
-    m->head.checksum = calc_checksum(m);
-    //m->head.checksum = 0;
-    return 0;
-}
-
 int send(msg *m){
     const int size=sizeof(m);
     //byte datos[size];
@@ -128,16 +85,13 @@ int send(msg *m){
     return 0;
 }
 
-
-
 // === MAIN ====================================================================
 void setup() {
   // put your setup code here, to run once:
     Serial.begin(9600);
-    pinMode(13, OUTPUT);  
-
-    
+    pinMode(13, OUTPUT);
 }
+
 void loop() {
     msg *m = (msg *) malloc(sizeof(msg));
     // Build a simple header.
@@ -146,7 +100,7 @@ void loop() {
     uint16_t type = 0b011;
     uint16_t size = 0b00011;
     fill_header(&m->head, src, mid, type, size);
- 
+
 
     // Build an array of size packets.
     uint16_t pidarr[size];
@@ -156,8 +110,6 @@ void loop() {
         valarr[i] = 0x0000     + (1<<i);
     }
     fill_payload(&m->payload, pidarr, valarr, size);
-    // Generate the checksum.
-    fill_checksum(m);
 
     // Send the message.
     send(m);
@@ -167,9 +119,9 @@ void loop() {
     free(m);
     delay(100); // delay en ms
 
-    digitalWrite(13, HIGH); // turn the LED on (HIGH is the voltage level)  
-    delay(1000); // wait for a second  
-    digitalWrite(13, LOW); // turn the LED on (HIGH is the voltage level)    
-    delay(1000); // wait for a second 
+    digitalWrite(13, HIGH); // turn the LED on (HIGH is the voltage level)
+    delay(1000); // wait for a second
+    digitalWrite(13, LOW); // turn the LED on (HIGH is the voltage level)
+    delay(1000); // wait for a second
 
 }
