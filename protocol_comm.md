@@ -1,4 +1,4 @@
-# CCTVal IMV 2.0 Communication Protocol v0.3
+# CCTVal IMV 2.0 Communication Protocol v0.4
 Protocol designed to manage communication for the different components inside the CCTVal Invasive Mechanical Ventilator.
 These three components are:
 * **Coordinator**: Acts as the coordinator between the UI and the ventilator.
@@ -29,13 +29,13 @@ Messages are separated in two, a fixed-size header and a variable-size payload o
 For the purposes of this file, messages are described as a `struct` named `msg`<sup>2</sup>.
 
 ```
-+------------------------------------+-----------------------------------------+
-| HEADER                             | PAYLOAD                                 |
-|  (32 bits)                         |  (40*size bits)                         |
-+-----+-----+------+------+----------+--------+--------+--------+--------+-----+
-| src | mid | type | size | checksum | pid[0] | val[0] | pid[1] | val[1] | ... |
-| (2) | (6) | (3)  | (5)  | (16)     | (8)    | (32)   | (8)    | (32)   | ... |
-+-----+-----+------+------+----------+--------+--------+--------+--------+-----+
++-------------------------+-----------------------------------------+
+| HEADER                  | PAYLOAD                                 |
+|  (16 bits)              |  (24*size bits)                         |
++-----+-----+------+------+--------+--------+--------+--------+-----+
+| src | mid | type | size | pid[0] | val[0] | pid[1] | val[1] | ... |
+| (2) | (6) | (3)  | (5)  | (8)    | (16)   | (8)    | (16)   | ... |
++-----+-----+------+------+--------+--------+--------+--------+-----+
 ```
 
 #### Header
@@ -60,16 +60,14 @@ Can be:
     * `110`: Control parameters.
     * `111`: Configuration parameters.
 * `size` (5 bits): Size of the payload.
-Describes the number of identifier-value pairs in the payload, so the total size of the payload is `40*size` bits.
-* `checksum` (16 bits): Sum complement checksum of the entire message.
-Used by the receiver to assert that the message was received correctly.
+Describes the number of identifier-value pairs in the payload, so the total size of the payload is `24*size` bits.
 
 #### Payload
 Then, the payload is built by an array of identifier-value pairs:
 * `pid` (8 bits): Identifier of the parameter sent.
 Each `type`:`pid` combination is unique and is described in the list at the end of this file.
-* `val` (32 bits): Value of the parameter.
-The value can either be a 32-bit `int` or a `float`, as is described in the list at the end of the file.
+* `val` (16 bits): Value of the parameter.
+The value can either be a 16-bit `int` or a `float`, as is described in the list at the end of the file.
 
 #### Functions<sup>5</sup>
 The list of functions used to manipulate the messages follows:
@@ -89,9 +87,7 @@ If the method is active for an extended period of time and no message is receive
 * `int assert_mid(byte mid)`: Assert that a message with the same `mid` has been seen recently.
 Returns `0` if the message hasn't been seen, `-1` otherwise.
 Implementation-wise, its recommended that the file containing the function stores a queue of a predefined `N` number of `mid`s as a global variable, popping the oldest one when a new one is added.
-* `int assert_checksum(msg m)`: Assert that the checksum of a message makes sense.
-Returns `0` if the checksum is valid, `-1` otherwise.
-* `int assert_payload(byte type, char* pid_arr, char* val_arr)`: As a final checkup, assert that all the `pid`s and `val`s received makes sense (depending on the `type`).
+* `int assert_payload(byte type, char* pid_arr, char* val_arr)`: Assert that all the `pid`s and `val`s received makes sense (depending on the `type`).
 * `int raise_error(int err)`: Raises error `err`, allowing the program to respond to the issue appropriately.
 
 --------------------------------------------------------------------------------
@@ -136,30 +132,6 @@ Actor 1      Actor 2
     * Actor 1 sends message.
     * Message is received by Actor 2.
     * Actor 2 asserts message ID and sees that it hasn't been received.
-    * Actor 2 asserts message checksum and sees that it is malformed.
-    * Actor 2 sends a NAK, asking Actor 1 to send the message again.
-    * Scenario loops until message is received.
-    * If message comes up malformed every time after N attempts, a **Multiple Malformed Messages** alarm is thrown.
-```
-Actor 1      Actor 2
-   |            |
-   +--- MSG --->|
-   |            |
-   |           MID
-   |          VALID
-   |            |
-   |         CHECKSUM
-   |         INVALID
-   |            |
-   |<--- NAK ---+
-   |            |
-```
-
-* **Scenario 4**:
-    * Actor 1 sends message.
-    * Message is received by Actor 2.
-    * Actor 2 asserts message ID and sees that it hasn't been received.
-    * Actor 2 asserts message checksum and sees that it is not malformed.
     * As a final check, actor 2 asserts message payload and sees that it doesn't make sense.
     * Actor 2 sends a NAK, asking Actor 1 to send the message again.
     * Scenario loops until message is received.
@@ -172,9 +144,6 @@ Actor 1      Actor 2
    |           MID
    |          VALID
    |            |
-   |         CHECKSUM
-   |          VALID
-   |            |
    |         PAYLOAD
    |         INVALID
    |            |
@@ -182,11 +151,10 @@ Actor 1      Actor 2
    |            |
 ```
 
-* **Scenario 5**:
+* **Scenario 4**:
     * Actor 1 sends message.
     * Message is received by Actor 2.
     * Actor 2 asserts message ID and sees that it hasn't been received.
-    * Actor 2 asserts message checksum and sees that it is not malformed.
     * Actor 2 asserts message payload and sees that it makes sense, marking the message ID as received and processing it accordingly.
     * Actor 2 sends a ACK.
     * Actor 1 receives the ACK, and the conversation ends.
@@ -196,9 +164,6 @@ Actor 1      Actor 2
    +--- MSG --->|
    |            |
    |           MID
-   |          VALID
-   |            |
-   |         CHECKSUM
    |          VALID
    |            |
    |         PAYLOAD
@@ -231,15 +196,10 @@ If it was already received and processed, the message ID has already been marked
 |    NAK &         ACK        |            |  |   |                success        |
 |   nfail >= N                |            |  |   |                   |           |
 |     |                       |            |  |   |                   v           |
-|     |                       |            |  |   +--failure-- assert_checksum()  |
-|     +------> raise_error()  |            |  |   |                   |           |
-|                             |            |  |   |                success        |
- \___________________________/             |  |   |                   |           |
-                                           |  |   |                   v           |
-                                           |  |   +--failure-- assert_payload()   |
-                                           |  |                       |           |
-                                           |  |                    success        |
-                                           |  |                       |           |
+|     |                       |            |  |   +--failure-- assert_payload()   |
+|     +------> raise_error()  |            |  |                       |           |
+|                             |            |  |                    success        |
+ \___________________________/             |  |                       |           |
                                            |  |                       v           |
                                            |  +------------------ send_ack()      |
                                            |                                      |
@@ -295,4 +255,3 @@ A future protocol could contemplate the possibility of eliminating this componen
 The message assigns a `val` to these `pid`s, but it's just to keep consistency and doesn't have any meaning.
 
 <sup>5</sup> More complex functions (like `send_req()` or `send_configparam()`) could be added in the future, but are left out for this version of the protocol to maintain simplicity.
-
