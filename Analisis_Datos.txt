@@ -1,0 +1,132 @@
+test_data->Draw("Sf2_old:high_flow>>hist1","Sf2_old<60&&high_flow>1&&Sf2_old>1&&abs(Sf2_old-high_flow)<5","COLZ")
+
+test_data->Draw("Sf1_old:high_flow>>hist2","Sf1_old<60&&high_flow>1&&Sf1_old>1&&abs(Sf1_old-high_flow)<5","COLZ")
+
+test_data->Draw("Sf1_old:high_flow>>hprof1","Sf1_old<60&&high_flow>1&&Sf1_old>1&&abs(Sf1_old-high_flow)<5","prof")
+
+Chi2                      =      2469.48
+NDf                       =           87
+p0                        =    0.0533321   +/-   0.0401566
+p1                        =     0.992535   +/-   0.00125457
+
+
+test_data->Draw("Sf2_old:high_flow>>hprof2","Sf2_old<60&&high_flow>1&&Sf2_old>1&&abs(Sf2_old-high_flow)<5","prof")
+
+Chi2                      =      1967.04
+NDf                       =           87
+p0                        =     0.264978   +/-   0.0434148
+p1                        =     0.976842   +/-   0.00129658
+
+test_data->Draw("high_flow:Sf2_old>>hprof2","Sf2_old<60&&high_flow>1&&Sf2_old>1&&abs(Sf2_old-high_flow)<5","prof")
+
+Chi2                      =      1401.87
+NDf                       =           84
+p0                        =     0.177351   +/-   0.0503972
+p1                        =      1.01928   +/-   0.00171133
+
+test_data->Draw("high_flow:Sf1_old>>hprof2","Sf1_old<60&&high_flow>1&&Sf1_old>1&&abs(Sf1_old-high_flow)<5","prof")
+
+Chi2                      =      1468.02
+NDf                       =           82
+p0                        =     0.693509   +/-   0.042503
+p1                        =     0.989212   +/-   0.00154989
+
+****************************
+test_data->Draw("y_sf1:Sf1_old>>hprof2","Sf1_old<80&&y_sf1<80&&y_sf1>12&&Sf1_old>12","prof")
+
+Minimizer is Linear / Migrad
+Chi2                      =      11017.3
+NDf                       =           81
+p0                        =     0.338362   +/-   0.00443659
+p1                        =      1.00724   +/-   9.74255e-05
+
+test_data->Draw("y_sf2:Sf2_old>>hprof2","Sf2_old<80&&y_sf2<80&&y_sf2>12&&Sf2_old>12","prof")
+Minimizer is Linear / Migrad
+Chi2                      =      5849.67
+NDf                       =           84
+p0                        =     0.735505   +/-   0.00478583
+p1                        =       1.0227   +/-   0.000106275
+
+**************************************
+
+test_data->Draw("volumen_tidal:volumen_espirado","abs(volumen_tidal-volumen_espirado)<50","prof")
+
+Minimizer is Linear / Migrad
+Chi2                      =      8505.54
+NDf                       =           61
+p0                        =       23.936   +/-   0.798276
+p1                        =     0.968415   +/-   0.00228178
+
+test_data->Draw("V_ti:V_te","V_te<1000&&V_te>0&&V_ti>0&&V_te<1000&abs(V_ti-V_te)<50","COLZ")
+
+
+test_data->Draw("V_ti:V_te","V_te<1000&&V_te>0&&V_ti>0&&V_te<1000&abs(V_ti-V_te)<50","prof")
+****************************************
+Minimizer is Linear / Migrad
+Chi2                      =       631.84
+NDf                       =           42
+p0                        =      36.0871   +/-   1.73966
+p1                        =     0.906592   +/-   0.00433174
+
+"profs" generates a TProfile with error on the spread
+"prof"  generates a TProfile with error on the mean
+see TProfile.
+
+test_data->Draw("V_ti:volumen_tidal","V_ti<1000&&V_ti>0&abs(V_ti-volumen_tidal)<40","prof")
+****************************************
+Minimizer is Linear / Migrad
+Chi2                      =      1733.85
+NDf                       =           44
+p0                        =      64.2235   +/-   1.29369
+p1                        =     0.923032   +/-   0.00360044
+
+*******************************************
+Datos del hospital previo a calibración
+
+test_data->Draw("V_ti:volumen_tidal","V_ti<1000&&V_ti>100&abs(V_ti-volumen_tidal)<100","prof")
+
+****************************************
+Minimizer is Linear / Migrad
+Chi2                      =      43526.9
+NDf                       =           42
+p0                        =     -24.4406   +/-   0.127372
+p1                        =      1.18633   +/-   0.000303199
+
+
+Datos hospital calibración
+
+test_data->Draw("high_flow:y_sf1>>hprof2","y_sf1<45&&high_flow<45&&high_flow>5&&y_sf1>5&&abs(y_sf1-high_flow)<3","prof")
+
+****************************************
+Minimizer is Linear / Migrad
+Chi2                      =      1037.49
+NDf                       =           73
+p0                        =   -0.0870947   +/-   0.0279948
+p1                        =     0.966129   +/-   0.00143171
+
+test_data->Draw("high_flow:y_sf2>>hprof2","y_sf2<45&&high_flow<45&&high_flow>5&&y_sf2>5&&abs(y_sf2-high_flow)<3","prof")
+
+****************************************
+Minimizer is Linear / Migrad
+Chi2                      =      904.651
+NDf                       =           76
+p0                        =    -0.129064   +/-   0.0366265
+p1                        =     0.955301   +/-   0.00158282
+
+CERO
+1.6394809
+
+1.60634
+Multiplicacion
+1.07887
+
+0.937017
+
+continuo->Draw("flujo-1.6394809:HF","abs(flujo-HF)<3","prof")
+
+VtiF Vti
+Minimizer is Linear / Migrad
+Chi2                      =       186537
+NDf                       =            7
+p0                        =       2.8411   +/-   0.181394
+p1                        =     0.938321   +/-   0.000468406
